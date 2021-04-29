@@ -1,0 +1,28 @@
+# DevBuddy config file
+# See https://github.com/devbuddy/devbuddy/blob/master/docs/Config.md
+
+env:
+  ENV: development
+
+up:
+  - go:
+      version: 1.14.4
+      modules: true
+  - custom:
+      name: Install golangci-lint
+      met?: which golangci-lint
+      meet: go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+
+commands:
+  test:
+    desc: "poipoi"
+    run: go test -cover -race ./...
+  lint:
+    desc: "poipoi"
+    run: golangci-lint run
+  tidy:
+    desc: "poipoi"
+    run: go mod tidy
+
+open:
+  devbuddy: https://github.com/devbuddy/devbuddy/blob/master/docs/Config.md#config-devyml
