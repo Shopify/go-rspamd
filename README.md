@@ -12,15 +12,11 @@ Refer to rspamd [documentation](https://rspamd.com/doc/) for help configuring an
 
 ## Usage 
 
-The API is defined [here](https://pkg.go.dev/github.com/Shopify/go-rspamd). The examples below are just that - examples. For the full piccture, reference the documentation.
-
-Generally the library can be thought of as partitioned into two parts, the client, and analysis. 
+The API is defined [here](https://pkg.go.dev/github.com/Shopify/go-rspamd).
 
 The client helps send emails to all POST endpoints on rspamd. Support for all GET endpoints does not currently exist as they can be accessed through rspamd's web interface, although support may exist in the future. A full list of all endpoints can be found [here](https://rspamd.com/doc/architecture/protocol.html). 
 
-The client supports email formats that implement `io.Reader` or `io.WriteTo`. This means that clients can pass in both `gomail.Message` objects, which implement `io.WriteTo` or simply the contents of an `.eml` file, which implement `io.Reader`. gomail can be found [here](https://github.com/go-gomail/gomail).
-
-The analysis currently supports casting meaning to different tiers of spam score. In the future, support may involve integrating and analyzing based off rspamd symbols.
+The client supports email formats that implement `io.Reader` or `io.WriterTo`. For example, this means that clients can pass in both `gomail.Message` objects, which implement `io.WriteTo` or simply the contents of an `.eml` file, which implement `io.Reader`. gomail can be found [here](https://github.com/go-gomail/gomail).
 
 ### Examples
 
@@ -49,7 +45,7 @@ pong, _ := client.Ping(ctx)
 Scan an email from an io.Reader (eg. loading an `.eml` file):
 ```go
 f, _ := os.Open("/path/to/email")
-email := rspamdclient.NewEmailFromReader(f).QueueId(2))
+email := rspamd.NewEmailFromReader(f).QueueId(2)
 checkRes, _ := client.Check(ctx, email)
 ```
 
@@ -57,14 +53,14 @@ Scan an email from an io.WriteTo (eg. a gomail `Message`):
 ```go
 // let mail be of type *gomail.Message
 // attach a Queue-Id to rspamd.Email instance
-email := rspamd.NewEmailFromWriteTo(mail).QueueID(1)
+email := rspamd.NewEmailFromWriterTo(mail).QueueID(1)
 checkRes, _ := client.Check(ctx, email)
 ```
 
 Add a message to fuzzy storage, attaching a flag and weight as per [docs](https://rspamd.com/doc/architecture/protocol.html#controller-http-endpoints):
 ```go
 // let mail be of type *gomail.Message
-email := rspamd.NewEmailFromWriteTo(mail).QueueID(2).Flag(1).Weight(19)
+email := rspamd.NewEmailFromWriterTo(mail).QueueID(2).Flag(1).Weight(19)
 learnRes, _ := client.FuzzyAdd(ctx, email)
 ```
 
