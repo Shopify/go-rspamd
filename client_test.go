@@ -2,6 +2,7 @@ package rspamd
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,7 +55,7 @@ func Test_Check(t *testing.T) {
 		transport.Reset()
 		transport.RegisterResponder(http.MethodPost, "/checkv2", func(req *http.Request) (*http.Response, error) {
 			_, _ = ioutil.ReadAll(req.Body)
-			return nil, errors.New("http error")
+			return nil, fmt.Errorf("http error")
 		})
 
 		_, err := client.Check(context.Background(), e3)

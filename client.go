@@ -2,12 +2,12 @@ package rspamd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -130,7 +130,7 @@ func (c *client) sendRequest(req *resty.Request, method, url string) (*resty.Res
 	res, err := req.Execute(method, url)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "executing request")
+		return nil, fmt.Errorf("executing request: %q", err)
 	}
 	if res.StatusCode() != http.StatusOK {
 		return nil, &errUnexpectedResponse{Status: res.StatusCode()}

@@ -1,9 +1,8 @@
 package rspamd
 
 import (
+	"fmt"
 	"io"
-
-	"github.com/pkg/errors"
 )
 
 type Email struct {
@@ -58,7 +57,7 @@ func readerFromWriterTo(writerTo io.WriterTo) io.Reader {
 
 	go func() {
 		if _, err := writerTo.WriteTo(w); err != nil {
-			_ = w.CloseWithError(errors.Wrap(err, "writing to pipe"))
+			_ = w.CloseWithError(fmt.Errorf("writing to pipe: %q", err))
 			return
 		}
 
