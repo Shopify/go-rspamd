@@ -1,8 +1,8 @@
-# rspamd-client-go
+# go-rspamd
 
 ## Introduction <br/>
 
-rspamd-client-go is a client library written to help interact with a rspamd instance, via HTTP. rspamd-client-go facilitates
+go-rspamd is a client library written to help interact with a rspamd instance, via HTTP. go-rspamd facilitates
 * Content scanning of emails
 * Training rspamd's Bayesian classifier
 * Updating rspamd's fuzzy storage by adding or removing messages 
@@ -12,7 +12,7 @@ Refer to rspamd [documentation](https://rspamd.com/doc/) for help configuring an
 
 ## Usage 
 
-The API is defined [here](https://pkg.go.dev/gopkg.in/rspamd-client-go.v1). The examples below are just that - examples. For the full piccture, reference the documentation.
+The API is defined [here](https://pkg.go.dev/github.com/Shopify/go-rspamd). The examples below are just that - examples. For the full piccture, reference the documentation.
 
 Generally the library can be thought of as partitioned into two parts, the client, and analysis. 
 
@@ -24,37 +24,48 @@ The analysis currently supports casting meaning to different tiers of spam score
 
 ### Examples
 
-_Note:_ rspamd-client-go is geared towards clients that use [context](https://golang.org/pkg/context/). However if you don't, whenever `context.Context` is expected, you can use `context.Background()`.
+_Note:_ go-rspamd is geared towards clients that use [context](https://golang.org/pkg/context/). However if you don't, whenever `context.Context` is expected, you can use `context.Background()`.
 
-Import rspamdclient:
+Import go-rspamd:
 ```go
-import "github.com/Shopify/rspamd-client-go"
+import "github.com/Shopify/go-rspamd"
 ```
-Instantiate the client with the url of your rspamd instance, and optional credentials:
+
+Instantiate the client with the url of your rspamd instance:
 ```go
- client := rspamdclient.New("https://contentscanner.com")
- // optionally pass in rspamdclient.Credentials("username", "password") as second argument
+ client := rspamd.New("https://contentscanner.com")
 ```
+
+Optionally pass in credentials:
+```go
+ client := rspamd.New("https://contentscanner.com", rspamd.Credentials("username", "password"))
+```
+
 Ping your rspamd instance:
 ```go
-pong, err := client.Ping(ctx)
+pong, _ := client.Ping(ctx)
 ```
-Scan an email from a gomail `Message` (or anything that implements `io.WriteTo`):
+
+Scan an email from an io.Reader (eg. loading an `.eml` file):
 ```go
-// let email be of type *gomail.Message
-// attach a Queue-Id to rspamdclient.Email instance
-checkRes, err := client.Check(ctx, rspamdclient.NewEmailFromWriter(email).QueueId(1))
+f, _ := os.Open("/path/to/email")
+email := rspamdclient.NewEmailFromReader(f).QueueId(2))
+checkRes, _ := client.Check(ctx, email)
 ```
-Scan an email from an `.eml` file (or anything that implements `io.Reader`):
+
+Scan an email from an io.WriteTo (eg. a gomail `Message`):
 ```go
-// attach a Queue-Id to rspamdclient.Email instance
-email := rspamdclient.NewEmailFromReader(rspamdclient.MustOpen("/path/to/email")).QueueId(2))
-checkRes, err := client.Check(ctx, email)
+// let mail be of type *gomail.Message
+// attach a Queue-Id to rspamd.Email instance
+email := rspamd.NewEmailFromWriteTo(mail).QueueID(1)
+checkRes, _ := client.Check(ctx, email)
 ```
+
 Add a message to fuzzy storage, attaching a flag and weight as per [docs](https://rspamd.com/doc/architecture/protocol.html#controller-http-endpoints):
 ```go
-// let email be of type *gomail.Message
-learnRes, err := client.FuzzyAdd(ctx, rspamdclient.NewEmailFromWriter(email).QueueId(2).Flag(1).Weight(19))
+// let mail be of type *gomail.Message
+email := rspamd.NewEmailFromWriteTo(mail).QueueID(2).Flag(1).Weight(19)
+learnRes, _ := client.FuzzyAdd(ctx, email)
 ```
 
 ## Semantics
@@ -64,3 +75,5 @@ learnRes, err := client.FuzzyAdd(ctx, rspamdclient.NewEmailFromWriter(email).Que
 ### Versioning
 
 ### License
+
+MIT
