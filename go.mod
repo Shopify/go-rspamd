@@ -1,4 +1,4 @@
-module go-rspamd
+module github.com/Shopify/go-rspamd
 
 go 1.16
 
