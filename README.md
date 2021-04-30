@@ -66,9 +66,16 @@ learnRes, _ := client.FuzzyAdd(ctx, email)
 
 ## Semantics
 
-### Contributing
+## Contributing
+
+We invite contributions to extend the API coverage.
+
+Report a bug: Open an issue
+Fix a bug: Open a pull request
 
 ### Versioning
+
+go-rspamd respects the [Semantic Versioning](https://semver.org/) for major/minor/patch versions. 
 
 ### License
 
