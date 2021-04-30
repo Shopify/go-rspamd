@@ -19,6 +19,7 @@ const (
 	pingEndpoint      = "ping"
 )
 
+// Client is a rspamd HTTP client.
 type Client interface {
 	Check(context.Context, *Email) (*CheckResponse, error)
 	LearnSpam(context.Context, *Email) (*LearnResponse, error)
@@ -34,16 +35,19 @@ type client struct {
 
 var _ Client = &client{}
 
+// CheckResponse encapsulates the response of Check.
 type CheckResponse struct {
 	Score     float64               `json:"score"`
 	MessageID string                `json:"message-id"`
 	Symbols   map[string]SymbolData `json:"symbols"`
 }
 
+// LearnResponse encapsulates the response of LearnSpam, LearnHam, FuzzyAdd, FuzzyDel.
 type LearnResponse struct {
 	Success bool `json:"success"`
 }
 
+// PingResponse encapsulates the response of Ping.
 type PingResponse string
 
 // Option is a function that configures the rspamd client.
@@ -53,6 +57,8 @@ type errUnexpectedResponse struct {
 	Status int
 }
 
+// New returns a client.
+// It takes the url of a rspamd instance, and configures the client with Options which are closures.
 func New(url string, options ...Option) *client {
 	client := &client{
 		client: resty.New().SetHostURL(url),
@@ -68,6 +74,7 @@ func New(url string, options ...Option) *client {
 	return client
 }
 
+// Check scans an email, returning a spam score and list of symbols.
 func (c *client) Check(ctx context.Context, e *Email) (*CheckResponse, error) {
 	result := &CheckResponse{}
 	req := c.makeEmailRequest(ctx, e).SetResult(result)
@@ -75,6 +82,7 @@ func (c *client) Check(ctx context.Context, e *Email) (*CheckResponse, error) {
 	return result, err
 }
 
+// LearnSpam trains rspamd's Bayesian classifier by marking an email as spam.
 func (c *client) LearnSpam(ctx context.Context, e *Email) (*LearnResponse, error) {
 	result := &LearnResponse{}
 	req := c.makeEmailRequest(ctx, e).SetResult(result)
@@ -82,6 +90,7 @@ func (c *client) LearnSpam(ctx context.Context, e *Email) (*LearnResponse, error
 	return result, err
 }
 
+// LearnSpam trains rspamd's Bayesian classifier by marking an email as ham.
 func (c *client) LearnHam(ctx context.Context, e *Email) (*LearnResponse, error) {
 	result := &LearnResponse{}
 	req := c.makeEmailRequest(ctx, e).SetResult(result)
@@ -89,6 +98,7 @@ func (c *client) LearnHam(ctx context.Context, e *Email) (*LearnResponse, error)
 	return result, err
 }
 
+// FuzzyAdd adds an email to fuzzy storage.
 func (c *client) FuzzyAdd(ctx context.Context, e *Email) (*LearnResponse, error) {
 	result := &LearnResponse{}
 	req := c.makeEmailRequest(ctx, e).SetResult(result)
@@ -96,6 +106,7 @@ func (c *client) FuzzyAdd(ctx context.Context, e *Email) (*LearnResponse, error)
 	return result, err
 }
 
+// FuzzyAdd removes an email from fuzzy storage.
 func (c *client) FuzzyDel(ctx context.Context, e *Email) (*LearnResponse, error) {
 	result := &LearnResponse{}
 	req := c.makeEmailRequest(ctx, e).SetResult(result)
@@ -103,6 +114,7 @@ func (c *client) FuzzyDel(ctx context.Context, e *Email) (*LearnResponse, error)
 	return result, err
 }
 
+// Ping pings the client's rspamd instance.
 func (c *client) Ping(ctx context.Context) (PingResponse, error) {
 	var result PingResponse
 	_, err := c.sendRequest(c.client.R().SetContext(ctx).SetResult(result), resty.MethodGet, pingEndpoint)
@@ -140,6 +152,7 @@ func (c *client) sendRequest(req *resty.Request, method, url string) (*resty.Res
 }
 
 // Credentials sets the credentials passed in parameters.
+// It returns an Option which is used to configure the client.
 func Credentials(username string, password string) Option {
 	return func(c *client) error {
 		c.client.SetBasicAuth(username, password).SetHeader("User", username)
@@ -151,6 +164,7 @@ func (e *errUnexpectedResponse) Error() string {
 	return fmt.Sprintf("Unexpected response code: %d", e.Status)
 }
 
+// IsNotFound returns true if a request returned a 404. This helps discern a known issue with rspamd's /checkv2 endpoint.
 func IsNotFound(err error) bool {
 	var errResp *errUnexpectedResponse
 	return errors.As(err, &errResp) && errResp.Status == http.StatusNotFound

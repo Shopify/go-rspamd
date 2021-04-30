@@ -10,6 +10,7 @@ import (
 
 var _ Client = &mockClient{}
 
+// NewMock creates a mock client, which can be used wherever client is used, to test/
 func NewMock() *mockClient {
 	return &mockClient{}
 }
