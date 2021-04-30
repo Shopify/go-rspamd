@@ -12,13 +12,10 @@ up:
 
 commands:
   test:
-    desc: "poipoi"
     run: go test -cover -race ./...
   lint:
-    desc: "poipoi"
     run: golangci-lint run
   tidy:
-    desc: "poipoi"
     run: go mod tidy
 
 open:
