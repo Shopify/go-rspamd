@@ -70,7 +70,7 @@ learnRes, _ := client.FuzzyAdd(ctx, email)
 
 We invite contributions to extend the API coverage.
 
-Report a bug: Open an issue
+Report a bug: Open an issue  
 Fix a bug: Open a pull request
 
 ### Versioning
