@@ -66,7 +66,7 @@ learnRes, _ := client.FuzzyAdd(ctx, email)
 
 ## Semantics
 
-## Contributing
+### Contributing
 
 We invite contributions to extend the API coverage.
 
