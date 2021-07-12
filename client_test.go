@@ -102,6 +102,43 @@ func Test_Fuzzy(t *testing.T) {
 	})
 }
 
+func Test_IsAlreadyLearnedError(t *testing.T) {
+	transport := httpmock.NewMockTransport()
+	restyClient := resty.New()
+	restyClient.SetTransport(transport)
+	client := New("http://rspamdexample.com", Credentials("username", "password"))
+	client.client = restyClient
+
+	e6 := NewEmailFromReader(open(t, "./testdata/test1.eml")).QueueID("6")
+	e7 := NewEmailFromReader(open(t, "./testdata/test1.eml")).QueueID("7")
+
+	t.Run("true if return status is 208", func(t *testing.T) {
+		transport.Reset()
+		transport.RegisterResponder(http.MethodPost, "/learnspam", func(req *http.Request) (*http.Response, error) {
+			_, _ = ioutil.ReadAll(req.Body)
+			return httpmock.NewJsonResponse(208, struct{ ErrorField string `json:"error"` }{ ErrorField: "<EmailId> has been already learned as spam, ignore it" })
+		})
+
+		resp, err := client.LearnSpam(context.Background(), e6)
+
+		require.Equal(t, false, resp.Success)
+		require.Equal(t, true, IsAlreadyLearnedError(err))
+	})
+
+	t.Run("false if return status is 400", func(t *testing.T) {
+		transport.Reset()
+		transport.RegisterResponder(http.MethodPost, "/learnspam", func(req *http.Request) (*http.Response, error) {
+			_, _ = ioutil.ReadAll(req.Body)
+			return httpmock.NewJsonResponse(400, struct{ ErrorField string `json:"error"` }{ ErrorField: "error" })
+		})
+
+		resp, err := client.LearnSpam(context.Background(), e7)
+
+		require.Equal(t, false, resp.Success)
+		require.Equal(t, false, IsAlreadyLearnedError(err))
+	})
+}
+
 func open(t *testing.T, path string) io.Reader {
 	f, err := os.Open(path)
 	require.NoError(t, err)

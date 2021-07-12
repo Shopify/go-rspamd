@@ -169,3 +169,10 @@ func IsNotFound(err error) bool {
 	var errResp *errUnexpectedResponse
 	return errors.As(err, &errResp) && errResp.Status == http.StatusNotFound
 }
+
+// IsAlreadyLearnedError returns true if a request returns 208, which can happen if rspamd detects a message has already been learned as SPAM/HAM.
+// This can allow clients to gracefully handle this use case.
+func IsAlreadyLearnedError(err error) bool {
+	var errResp *errUnexpectedResponse
+	return errors.As(err, &errResp) && errResp.Status == http.StatusAlreadyReported
+}
