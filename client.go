@@ -53,7 +53,7 @@ type PingResponse string
 // Option is a function that configures the rspamd client.
 type Option func(*client) error
 
-type errUnexpectedResponse struct {
+type UnexpectedResponseError struct {
 	Status int
 }
 
@@ -145,7 +145,7 @@ func (c *client) sendRequest(req *resty.Request, method, url string) (*resty.Res
 		return nil, fmt.Errorf("executing request: %q", err)
 	}
 	if res.StatusCode() != http.StatusOK {
-		return nil, &errUnexpectedResponse{Status: res.StatusCode()}
+		return nil, &UnexpectedResponseError{Status: res.StatusCode()}
 	}
 
 	return res, nil
@@ -160,19 +160,19 @@ func Credentials(username string, password string) Option {
 	}
 }
 
-func (e *errUnexpectedResponse) Error() string {
+func (e *UnexpectedResponseError) Error() string {
 	return fmt.Sprintf("Unexpected response code: %d", e.Status)
 }
 
 // IsNotFound returns true if a request returned a 404. This helps discern a known issue with rspamd's /checkv2 endpoint.
 func IsNotFound(err error) bool {
-	var errResp *errUnexpectedResponse
+	var errResp *UnexpectedResponseError
 	return errors.As(err, &errResp) && errResp.Status == http.StatusNotFound
 }
 
 // IsAlreadyLearnedError returns true if a request returns 208, which can happen if rspamd detects a message has already been learned as SPAM/HAM.
 // This can allow clients to gracefully handle this use case.
 func IsAlreadyLearnedError(err error) bool {
-	var errResp *errUnexpectedResponse
+	var errResp *UnexpectedResponseError
 	return errors.As(err, &errResp) && errResp.Status == http.StatusAlreadyReported
 }
