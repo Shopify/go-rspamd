@@ -129,8 +129,8 @@ func (c *client) makeEmailRequest(ctx context.Context, e *Email) *resty.Request 
 	if e.options.flag != 0 {
 		headers["Flag"] = fmt.Sprintf("%d", e.options.flag)
 	}
-	if e.options.weight != 0.0 {
-		headers["Weight"] = fmt.Sprintf("%f", e.options.weight)
+	if e.options.weight != 0 {
+		headers["Weight"] = fmt.Sprintf("%d", e.options.weight)
 	}
 	return c.client.R().
 		SetContext(ctx).
