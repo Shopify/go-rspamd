@@ -15,7 +15,7 @@ type Email struct {
 // Options encapsulate headers the client can pass in requests to rspamd.
 type Options struct {
 	flag   int
-	weight float64
+	weight int32
 }
 
 // SymbolData encapsulates the data returned for each symbol from Check.
@@ -58,7 +58,7 @@ func (e *Email) Flag(flag int) *Email {
 
 // Weight attaches a weight to an Email, and eventually as a header when sent to rspamd.
 // Weight is added to hashes.
-func (e *Email) Weight(weight float64) *Email {
+func (e *Email) Weight(weight int32) *Email {
 	e.options.weight = weight
 	return e
 }
