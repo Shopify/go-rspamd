@@ -37,6 +37,7 @@ var _ Client = &client{}
 
 // CheckResponse encapsulates the response of Check.
 type CheckResponse struct {
+	Action    string                `json:"action"`
 	Score     float64               `json:"score"`
 	MessageID string                `json:"message-id"`
 	Symbols   map[string]SymbolData `json:"symbols"`
