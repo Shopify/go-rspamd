@@ -9,6 +9,7 @@ import (
 type Email struct {
 	message io.Reader
 	queueID string
+	user    string
 	options Options
 }
 

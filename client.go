@@ -126,6 +126,9 @@ func (c *client) makeEmailRequest(ctx context.Context, e *Email) *resty.Request 
 	if e.queueID != "" {
 		headers["Queue-ID"] = e.queueID
 	}
+	if e.user != "" {
+		headers["User"] = e.user
+	}
 	if e.options.flag != 0 {
 		headers["Flag"] = fmt.Sprintf("%d", e.options.flag)
 	}
