@@ -50,6 +50,12 @@ func (e *Email) QueueID(queueID string) *Email {
 	return e
 }
 
+// User attaches a username for authenticated SMTP client to an Email, and eventually as a header when sent to rspamd.
+func (e *Email) User(user string) *Email {
+	e.user = user
+	return e
+}
+
 // Flag attaches a flag to an Email, and eventually as a header when sent to rspamd.
 // Flag identifies fuzzy storage.
 func (e *Email) Flag(flag int) *Email {
