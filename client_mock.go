@@ -19,8 +19,8 @@ type mockClient struct {
 	mock.Mock
 }
 
-func (m *mockClient) Check(ctx context.Context, e *Email) (*CheckResponse, error) {
-	args := m.Called(ctx, e)
+func (m *mockClient) Check(ctx context.Context, cr *CheckRequest) (*CheckResponse, error) {
+	args := m.Called(ctx, cr)
 	if args.Error(1) != nil {
 		return nil, args.Error(1)
 	}
@@ -28,8 +28,8 @@ func (m *mockClient) Check(ctx context.Context, e *Email) (*CheckResponse, error
 	return args.Get(0).(*CheckResponse), nil
 }
 
-func (m *mockClient) LearnSpam(ctx context.Context, e *Email) (*LearnResponse, error) {
-	args := m.Called(ctx, e)
+func (m *mockClient) LearnSpam(ctx context.Context, lr *LearnRequest) (*LearnResponse, error) {
+	args := m.Called(ctx, lr)
 	if args.Error(1) != nil {
 		return nil, args.Error(1)
 	}
@@ -37,8 +37,8 @@ func (m *mockClient) LearnSpam(ctx context.Context, e *Email) (*LearnResponse, e
 	return args.Get(0).(*LearnResponse), nil
 }
 
-func (m *mockClient) LearnHam(ctx context.Context, e *Email) (*LearnResponse, error) {
-	args := m.Called(ctx, e)
+func (m *mockClient) LearnHam(ctx context.Context, lr *LearnRequest) (*LearnResponse, error) {
+	args := m.Called(ctx, lr)
 	if args.Error(1) != nil {
 		return nil, args.Error(1)
 	}
@@ -46,22 +46,22 @@ func (m *mockClient) LearnHam(ctx context.Context, e *Email) (*LearnResponse, er
 	return args.Get(0).(*LearnResponse), nil
 }
 
-func (m *mockClient) FuzzyAdd(ctx context.Context, e *Email) (*LearnResponse, error) {
-	args := m.Called(ctx, e)
+func (m *mockClient) FuzzyAdd(ctx context.Context, fr *FuzzyRequest) (*FuzzyResponse, error) {
+	args := m.Called(ctx, fr)
 	if args.Error(1) != nil {
 		return nil, args.Error(1)
 	}
 
-	return args.Get(0).(*LearnResponse), nil
+	return args.Get(0).(*FuzzyResponse), nil
 }
 
-func (m *mockClient) FuzzyDel(ctx context.Context, e *Email) (*LearnResponse, error) {
-	args := m.Called(ctx, e)
+func (m *mockClient) FuzzyDel(ctx context.Context, fr *FuzzyRequest) (*FuzzyResponse, error) {
+	args := m.Called(ctx, fr)
 	if args.Error(1) != nil {
 		return nil, args.Error(1)
 	}
 
-	return args.Get(0).(*LearnResponse), nil
+	return args.Get(0).(*FuzzyResponse), nil
 }
 
 func (m *mockClient) Ping(ctx context.Context) (PingResponse, error) {

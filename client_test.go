@@ -21,9 +21,18 @@ func Test_Check(t *testing.T) {
 	client := New("http://rspamdexample.com", Credentials("username", "password"))
 	client.client = restyClient
 
-	e1 := NewEmailFromReader(open(t, "./testdata/test1.eml")).QueueID("1")
-	e2 := NewEmailFromReader(open(t, "./testdata/test1.eml")).QueueID("2")
-	e3 := NewEmailFromReader(open(t, "./testdata/test1.eml")).QueueID("3")
+	e1 := &CheckRequest{
+		Message: open(t, "./testdata/test1.eml"),
+		Headers: Headers{}.QueueId("1"),
+	}
+	e2 := &CheckRequest{
+		Message: open(t, "./testdata/test1.eml"),
+		Headers: Headers{}.QueueId("2"),
+	}
+	e3 := &CheckRequest{
+		Message: open(t, "./testdata/test1.eml"),
+		Headers: Headers{}.QueueId("3"),
+	}
 
 	t.Run("success request (check)", func(t *testing.T) {
 		transport.Reset()
@@ -72,14 +81,23 @@ func Test_Fuzzy(t *testing.T) {
 	client := New("http://rspamdexample.com", Credentials("username", "password"))
 	client.client = restyClient
 
-	e4 := NewEmailFromReader(open(t, "./testdata/test1.eml")).QueueID("4").Flag(1).Weight(19)
-	e5 := NewEmailFromReader(open(t, "./testdata/test1.eml")).QueueID("5").Flag(1)
+	e4 := &FuzzyRequest{
+		Message: open(t, "./testdata/test1.eml"),
+		Flag:    1,
+		Weight:  19,
+		Headers: Headers{}.QueueId("4"),
+	}
+	e5 := &FuzzyRequest{
+		Message: open(t, "./testdata/test1.eml"),
+		Flag:    1,
+		Headers: Headers{}.QueueId("5"),
+	}
 
 	t.Run("success request (fuzzy del)", func(t *testing.T) {
 		transport.Reset()
 		transport.RegisterResponder(http.MethodPost, "/fuzzydel", func(req *http.Request) (*http.Response, error) {
 			_, _ = ioutil.ReadAll(req.Body)
-			return httpmock.NewJsonResponse(200, LearnResponse{Success: true})
+			return httpmock.NewJsonResponse(200, FuzzyResponse{Success: true})
 		})
 
 		resp, err := client.FuzzyDel(context.Background(), e4)
@@ -92,7 +110,7 @@ func Test_Fuzzy(t *testing.T) {
 		transport.Reset()
 		transport.RegisterResponder(http.MethodPost, "/fuzzyadd", func(req *http.Request) (*http.Response, error) {
 			_, _ = ioutil.ReadAll(req.Body)
-			return httpmock.NewJsonResponse(400, LearnResponse{Success: false})
+			return httpmock.NewJsonResponse(400, FuzzyResponse{Success: false})
 		})
 
 		_, err := client.FuzzyAdd(context.Background(), e5)
@@ -109,14 +127,22 @@ func Test_IsAlreadyLearnedError(t *testing.T) {
 	client := New("http://rspamdexample.com", Credentials("username", "password"))
 	client.client = restyClient
 
-	e6 := NewEmailFromReader(open(t, "./testdata/test1.eml")).QueueID("6")
-	e7 := NewEmailFromReader(open(t, "./testdata/test1.eml")).QueueID("7")
+	e6 := &LearnRequest{
+		Message: open(t, "./testdata/test1.eml"),
+		Headers: Headers{}.QueueId("6"),
+	}
+	e7 := &LearnRequest{
+		Message: open(t, "./testdata/test1.eml"),
+		Headers: Headers{}.QueueId("7"),
+	}
 
 	t.Run("true if return status is 208", func(t *testing.T) {
 		transport.Reset()
 		transport.RegisterResponder(http.MethodPost, "/learnspam", func(req *http.Request) (*http.Response, error) {
 			_, _ = ioutil.ReadAll(req.Body)
-			return httpmock.NewJsonResponse(208, struct{ ErrorField string `json:"error"` }{ ErrorField: "<EmailId> has been already learned as spam, ignore it" })
+			return httpmock.NewJsonResponse(208, struct {
+				ErrorField string `json:"error"`
+			}{ErrorField: "<EmailId> has been already learned as spam, ignore it"})
 		})
 
 		resp, err := client.LearnSpam(context.Background(), e6)
@@ -129,7 +155,9 @@ func Test_IsAlreadyLearnedError(t *testing.T) {
 		transport.Reset()
 		transport.RegisterResponder(http.MethodPost, "/learnspam", func(req *http.Request) (*http.Response, error) {
 			_, _ = ioutil.ReadAll(req.Body)
-			return httpmock.NewJsonResponse(400, struct{ ErrorField string `json:"error"` }{ ErrorField: "error" })
+			return httpmock.NewJsonResponse(400, struct {
+				ErrorField string `json:"error"`
+			}{ErrorField: "error"})
 		})
 
 		resp, err := client.LearnSpam(context.Background(), e7)

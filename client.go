@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -21,11 +23,11 @@ const (
 
 // Client is a rspamd HTTP client.
 type Client interface {
-	Check(context.Context, *Email) (*CheckResponse, error)
-	LearnSpam(context.Context, *Email) (*LearnResponse, error)
-	LearnHam(context.Context, *Email) (*LearnResponse, error)
-	FuzzyAdd(context.Context, *Email) (*LearnResponse, error)
-	FuzzyDel(context.Context, *Email) (*LearnResponse, error)
+	Check(context.Context, *CheckRequest) (*CheckResponse, error)
+	LearnSpam(context.Context, *LearnRequest) (*LearnResponse, error)
+	LearnHam(context.Context, *LearnRequest) (*LearnResponse, error)
+	FuzzyAdd(context.Context, *FuzzyRequest) (*FuzzyResponse, error)
+	FuzzyDel(context.Context, *FuzzyRequest) (*FuzzyResponse, error)
 	Ping(context.Context) (PingResponse, error)
 }
 
@@ -35,16 +37,68 @@ type client struct {
 
 var _ Client = &client{}
 
+type Headers map[string]string
+
+func (h Headers) QueueId(queueId string) Headers {
+	h["Queue-Id"] = queueId
+	return h
+}
+
+func (h Headers) flag(flag int) Headers {
+	h["Flag"] = strconv.Itoa(flag)
+	return h
+}
+
+func (h Headers) weight(weight int) Headers {
+	h["Weight"] = strconv.Itoa(weight)
+	return h
+}
+
+// CheckRequest encapsulates the request of Check.
+type CheckRequest struct {
+	Message io.Reader
+	Headers Headers
+}
+
+// SymbolData encapsulates the data returned for each symbol from Check.
+type SymbolData struct {
+	Name        string  `json:"name"`
+	Score       float64 `json:"score"`
+	MetricScore float64 `json:"metric_score"`
+	Description string  `json:"description"`
+}
+
 // CheckResponse encapsulates the response of Check.
 type CheckResponse struct {
 	Score     float64               `json:"score"`
+	Action    string                `json:"action"`
 	MessageID string                `json:"message-id"`
 	Symbols   map[string]SymbolData `json:"symbols"`
 }
 
-// LearnResponse encapsulates the response of LearnSpam, LearnHam, FuzzyAdd, FuzzyDel.
+// LearnRequest encapsulates the request of LearnSpam, LearnHam.
+type LearnRequest struct {
+	Message io.Reader
+	Headers Headers
+}
+
+// LearnResponse encapsulates the response of LearnSpam, LearnHam.
 type LearnResponse struct {
 	Success bool `json:"success"`
+}
+
+// FuzzyRequest encapsulates the request of FuzzyAdd, FuzzyDel.
+type FuzzyRequest struct {
+	Message io.Reader
+	Flag    int
+	Weight  int
+	Headers Headers
+}
+
+// FuzzyResponse encapsulates the response of FuzzyAdd, FuzzyDel.
+type FuzzyResponse struct {
+	Success bool     `json:"success"`
+	Hashes  []string `json:"hashes"`
 }
 
 // PingResponse encapsulates the response of Ping.
@@ -60,56 +114,69 @@ type UnexpectedResponseError struct {
 // New returns a client.
 // It takes the url of a rspamd instance, and configures the client with Options which are closures.
 func New(url string, options ...Option) *client {
-	client := &client{
-		client: resty.New().SetHostURL(url),
-	}
+	cl := NewFromClient(resty.New().SetHostURL(url))
 
 	for _, option := range options {
-		err := option(client)
+		err := option(cl)
 		if err != nil {
-			log.Fatal("failed to configure client")
+			log.Fatal("failed to configure cl")
 		}
 	}
 
-	return client
+	return cl
+}
+
+// NewFromClient returns a client.
+// It takes an instance of resty.Client.
+func NewFromClient(restyClient *resty.Client) *client {
+	cl := &client{
+		client: restyClient,
+	}
+	return cl
 }
 
 // Check scans an email, returning a spam score and list of symbols.
-func (c *client) Check(ctx context.Context, e *Email) (*CheckResponse, error) {
+func (c *client) Check(ctx context.Context, cr *CheckRequest) (*CheckResponse, error) {
 	result := &CheckResponse{}
-	req := c.makeEmailRequest(ctx, e).SetResult(result)
+	req := c.buildRequest(ctx, cr.Message, cr.Headers).SetResult(result)
 	_, err := c.sendRequest(req, resty.MethodPost, checkV2Endpoint)
 	return result, err
 }
 
 // LearnSpam trains rspamd's Bayesian classifier by marking an email as spam.
-func (c *client) LearnSpam(ctx context.Context, e *Email) (*LearnResponse, error) {
+func (c *client) LearnSpam(ctx context.Context, lr *LearnRequest) (*LearnResponse, error) {
 	result := &LearnResponse{}
-	req := c.makeEmailRequest(ctx, e).SetResult(result)
+	req := c.buildRequest(ctx, lr.Message, lr.Headers).SetResult(result)
 	_, err := c.sendRequest(req, resty.MethodPost, learnSpamEndpoint)
 	return result, err
 }
 
-// LearnSpam trains rspamd's Bayesian classifier by marking an email as ham.
-func (c *client) LearnHam(ctx context.Context, e *Email) (*LearnResponse, error) {
+// LearnHam trains rspamd's Bayesian classifier by marking an email as ham.
+func (c *client) LearnHam(ctx context.Context, lr *LearnRequest) (*LearnResponse, error) {
 	result := &LearnResponse{}
-	req := c.makeEmailRequest(ctx, e).SetResult(result)
+	req := c.buildRequest(ctx, lr.Message, lr.Headers).SetResult(result)
 	_, err := c.sendRequest(req, resty.MethodPost, learnHamEndpoint)
 	return result, err
 }
 
 // FuzzyAdd adds an email to fuzzy storage.
-func (c *client) FuzzyAdd(ctx context.Context, e *Email) (*LearnResponse, error) {
-	result := &LearnResponse{}
-	req := c.makeEmailRequest(ctx, e).SetResult(result)
+func (c *client) FuzzyAdd(ctx context.Context, fr *FuzzyRequest) (*FuzzyResponse, error) {
+	result := &FuzzyResponse{}
+	if fr.Headers == nil {
+		fr.Headers = Headers{}
+	}
+	req := c.buildRequest(ctx, fr.Message, fr.Headers.flag(fr.Flag).weight(fr.Weight)).SetResult(result)
 	_, err := c.sendRequest(req, resty.MethodPost, fuzzyAddEndpoint)
 	return result, err
 }
 
-// FuzzyAdd removes an email from fuzzy storage.
-func (c *client) FuzzyDel(ctx context.Context, e *Email) (*LearnResponse, error) {
-	result := &LearnResponse{}
-	req := c.makeEmailRequest(ctx, e).SetResult(result)
+// FuzzyDel removes an email from fuzzy storage.
+func (c *client) FuzzyDel(ctx context.Context, fr *FuzzyRequest) (*FuzzyResponse, error) {
+	result := &FuzzyResponse{}
+	if fr.Headers == nil {
+		fr.Headers = Headers{}
+	}
+	req := c.buildRequest(ctx, fr.Message, fr.Headers.flag(fr.Flag)).SetResult(result)
 	_, err := c.sendRequest(req, resty.MethodPost, fuzzyDelEndpoint)
 	return result, err
 }
@@ -121,25 +188,15 @@ func (c *client) Ping(ctx context.Context) (PingResponse, error) {
 	return result, err
 }
 
-func (c *client) makeEmailRequest(ctx context.Context, e *Email) *resty.Request {
-	headers := map[string]string{}
-	if e.queueID != "" {
-		headers["Queue-ID"] = e.queueID
-	}
-	if e.options.flag != 0 {
-		headers["Flag"] = fmt.Sprintf("%d", e.options.flag)
-	}
-	if e.options.weight != 0 {
-		headers["Weight"] = fmt.Sprintf("%d", e.options.weight)
-	}
+func (c *client) buildRequest(ctx context.Context, message io.Reader, headers Headers) *resty.Request {
 	return c.client.R().
 		SetContext(ctx).
 		SetHeaders(headers).
-		SetBody(e.message)
+		SetBody(message)
 }
 
-func (c *client) sendRequest(req *resty.Request, method, url string) (*resty.Response, error) {
-	res, err := req.Execute(method, url)
+func (c *client) sendRequest(req *resty.Request, method, endpoint string) (*resty.Response, error) {
+	res, err := req.Execute(method, endpoint)
 
 	if err != nil {
 		return nil, fmt.Errorf("executing request: %q", err)
@@ -175,4 +232,19 @@ func IsNotFound(err error) bool {
 func IsAlreadyLearnedError(err error) bool {
 	var errResp *UnexpectedResponseError
 	return errors.As(err, &errResp) && errResp.Status == http.StatusAlreadyReported
+}
+
+func ReaderFromWriterTo(writerTo io.WriterTo) io.Reader {
+	r, w := io.Pipe()
+
+	go func() {
+		if _, err := writerTo.WriteTo(w); err != nil {
+			_ = w.CloseWithError(fmt.Errorf("writing to pipe: %q", err))
+			return
+		}
+
+		_ = w.Close() // Always succeeds
+	}()
+
+	return r
 }
