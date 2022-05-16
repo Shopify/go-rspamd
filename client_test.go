@@ -21,23 +21,17 @@ func Test_Check(t *testing.T) {
 	client := New("http://rspamdexample.com", Credentials("username", "password"))
 	client.client = restyClient
 
-	h1 := http.Header{}
-	h1.Set(QueueID, "1")
 	e1 := &CheckRequest{
 		Message: open(t, "./testdata/test1.eml"),
-		Header:  h1,
+		Header:  NewHeaderConfigurer(nil).QueueID("1").Header(),
 	}
-	h2 := http.Header{}
-	h2.Set(QueueID, "2")
 	e2 := &CheckRequest{
 		Message: open(t, "./testdata/test1.eml"),
-		Header:  h2,
+		Header:  NewHeaderConfigurer(nil).QueueID("2").Header(),
 	}
-	h3 := http.Header{}
-	h3.Set(QueueID, "3")
 	e3 := &CheckRequest{
 		Message: open(t, "./testdata/test1.eml"),
-		Header:  h3,
+		Header:  NewHeaderConfigurer(nil).QueueID("3").Header(),
 	}
 
 	t.Run("success request (check)", func(t *testing.T) {
@@ -87,20 +81,16 @@ func Test_Fuzzy(t *testing.T) {
 	client := New("http://rspamdexample.com", Credentials("username", "password"))
 	client.client = restyClient
 
-	h4 := http.Header{}
-	h4.Set(QueueID, "4")
 	e4 := &FuzzyRequest{
 		Message: open(t, "./testdata/test1.eml"),
 		Flag:    1,
 		Weight:  19,
-		Header:  h4,
+		Header:  NewHeaderConfigurer(nil).QueueID("4").Header(),
 	}
-	h5 := http.Header{}
-	h5.Set(QueueID, "5")
 	e5 := &FuzzyRequest{
 		Message: open(t, "./testdata/test1.eml"),
 		Flag:    1,
-		Header:  h5,
+		Header:  NewHeaderConfigurer(nil).QueueID("5").Header(),
 	}
 
 	t.Run("success request (fuzzy del)", func(t *testing.T) {
@@ -137,17 +127,13 @@ func Test_IsAlreadyLearnedError(t *testing.T) {
 	client := New("http://rspamdexample.com", Credentials("username", "password"))
 	client.client = restyClient
 
-	h6 := http.Header{}
-	h6.Set(QueueID, "6")
 	e6 := &LearnRequest{
 		Message: open(t, "./testdata/test1.eml"),
-		Header:  h6,
+		Header:  NewHeaderConfigurer(nil).QueueID("6").Header(),
 	}
-	h7 := http.Header{}
-	h7.Set(QueueID, "7")
 	e7 := &LearnRequest{
 		Message: open(t, "./testdata/test1.eml"),
-		Header:  h7,
+		Header:  NewHeaderConfigurer(nil).QueueID("7").Header(),
 	}
 
 	t.Run("true if return status is 208", func(t *testing.T) {
