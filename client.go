@@ -100,7 +100,7 @@ type UnexpectedResponseError struct {
 // New returns a client.
 // It takes the url of a rspamd instance, and configures the client with Options which are closures.
 func New(url string, options ...Option) *client {
-	cl := NewFromClient(resty.New().SetHostURL(url))
+	cl := NewFromClient(resty.New().SetBaseURL(url))
 
 	for _, option := range options {
 		err := option(cl)
