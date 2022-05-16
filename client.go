@@ -119,7 +119,7 @@ func New(url string, options ...Option) *client {
 	for _, option := range options {
 		err := option(cl)
 		if err != nil {
-			log.Fatal("failed to configure cl")
+			log.Fatal("failed to configure client")
 		}
 	}
 
