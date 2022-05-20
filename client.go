@@ -148,8 +148,12 @@ func (c *client) LearnHam(ctx context.Context, lr *LearnRequest) (*LearnResponse
 // FuzzyAdd adds an email to fuzzy storage.
 func (c *client) FuzzyAdd(ctx context.Context, fr *FuzzyRequest) (*FuzzyResponse, error) {
 	result := &FuzzyResponse{}
-	header := NewHeaderConfigurer(fr.Header).Flag(fr.Flag).Weight(fr.Weight).Header()
-	req := c.buildRequest(ctx, fr.Message, header).SetResult(result)
+	if fr.Header == nil {
+		fr.Header = http.Header{}
+	}
+	fr.Header.Set(Flag, strconv.Itoa(fr.Flag))
+	fr.Header.Set(Weight, strconv.Itoa(fr.Weight))
+	req := c.buildRequest(ctx, fr.Message, fr.Header).SetResult(result)
 	_, err := c.sendRequest(req, resty.MethodPost, fuzzyAddEndpoint)
 	return result, err
 }
@@ -157,8 +161,11 @@ func (c *client) FuzzyAdd(ctx context.Context, fr *FuzzyRequest) (*FuzzyResponse
 // FuzzyDel removes an email from fuzzy storage.
 func (c *client) FuzzyDel(ctx context.Context, fr *FuzzyRequest) (*FuzzyResponse, error) {
 	result := &FuzzyResponse{}
-	header := NewHeaderConfigurer(fr.Header).Flag(fr.Flag).Header()
-	req := c.buildRequest(ctx, fr.Message, header).SetResult(result)
+	if fr.Header == nil {
+		fr.Header = http.Header{}
+	}
+	fr.Header.Set(Flag, strconv.Itoa(fr.Flag))
+	req := c.buildRequest(ctx, fr.Message, fr.Header).SetResult(result)
 	_, err := c.sendRequest(req, resty.MethodPost, fuzzyDelEndpoint)
 	return result, err
 }
@@ -229,34 +236,4 @@ func ReaderFromWriterTo(writerTo io.WriterTo) io.Reader {
 	}()
 
 	return r
-}
-
-type HeaderConfigurer struct {
-	header http.Header
-}
-
-func (hc HeaderConfigurer) QueueID(queueID string) HeaderConfigurer {
-	hc.header.Set(QueueID, queueID)
-	return hc
-}
-
-func (hc HeaderConfigurer) Flag(flag int) HeaderConfigurer {
-	hc.header.Set(Flag, strconv.Itoa(flag))
-	return hc
-}
-
-func (hc HeaderConfigurer) Weight(weight int) HeaderConfigurer {
-	hc.header.Set(Weight, strconv.Itoa(weight))
-	return hc
-}
-
-func (hc HeaderConfigurer) Header() http.Header {
-	return hc.header
-}
-
-func NewHeaderConfigurer(header http.Header) HeaderConfigurer {
-	if header == nil {
-		header = http.Header{}
-	}
-	return HeaderConfigurer{header}
 }
