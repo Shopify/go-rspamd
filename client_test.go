@@ -22,19 +22,19 @@ func Test_Check(t *testing.T) {
 	client.client = restyClient
 
 	h1 := http.Header{}
-	h1.Set(QueueID, "1")
+	SetQueueID(h1, "1")
 	e1 := &CheckRequest{
 		Message: open(t, "./testdata/test1.eml"),
 		Header:  h1,
 	}
 	h2 := http.Header{}
-	h2.Set(QueueID, "2")
+	SetQueueID(h2, "2")
 	e2 := &CheckRequest{
 		Message: open(t, "./testdata/test1.eml"),
 		Header:  h2,
 	}
 	h3 := http.Header{}
-	h3.Set(QueueID, "3")
+	SetQueueID(h3, "3")
 	e3 := &CheckRequest{
 		Message: open(t, "./testdata/test1.eml"),
 		Header:  h3,
@@ -44,6 +44,7 @@ func Test_Check(t *testing.T) {
 		transport.Reset()
 		transport.RegisterResponder(http.MethodPost, "/checkv2", func(req *http.Request) (*http.Response, error) {
 			_, _ = ioutil.ReadAll(req.Body)
+			require.Equal(t, "1", req.Header.Get(QueueID))
 			return httpmock.NewJsonResponse(200, CheckResponse{Score: 1.5})
 		})
 
@@ -57,6 +58,7 @@ func Test_Check(t *testing.T) {
 		transport.Reset()
 		transport.RegisterResponder(http.MethodPost, "/checkv2", func(req *http.Request) (*http.Response, error) {
 			_, _ = ioutil.ReadAll(req.Body)
+			require.Equal(t, "2", req.Header.Get(QueueID))
 			return httpmock.NewJsonResponse(400, CheckResponse{Score: 1.5})
 		})
 
@@ -70,6 +72,7 @@ func Test_Check(t *testing.T) {
 		transport.Reset()
 		transport.RegisterResponder(http.MethodPost, "/checkv2", func(req *http.Request) (*http.Response, error) {
 			_, _ = ioutil.ReadAll(req.Body)
+			require.Equal(t, "3", req.Header.Get(QueueID))
 			return nil, fmt.Errorf("http error")
 		})
 
@@ -88,18 +91,18 @@ func Test_Fuzzy(t *testing.T) {
 	client.client = restyClient
 
 	h4 := http.Header{}
-	h4.Set(QueueID, "4")
+	SetQueueID(h4, "4")
 	e4 := &FuzzyRequest{
 		Message: open(t, "./testdata/test1.eml"),
 		Flag:    1,
-		Weight:  19,
 		Header:  h4,
 	}
 	h5 := http.Header{}
-	h5.Set(QueueID, "5")
+	SetQueueID(h5, "5")
 	e5 := &FuzzyRequest{
 		Message: open(t, "./testdata/test1.eml"),
 		Flag:    1,
+		Weight:  19,
 		Header:  h5,
 	}
 
@@ -107,6 +110,8 @@ func Test_Fuzzy(t *testing.T) {
 		transport.Reset()
 		transport.RegisterResponder(http.MethodPost, "/fuzzydel", func(req *http.Request) (*http.Response, error) {
 			_, _ = ioutil.ReadAll(req.Body)
+			require.Equal(t, "4", req.Header.Get(QueueID))
+			require.Equal(t, "1", req.Header.Get(Flag))
 			return httpmock.NewJsonResponse(200, FuzzyResponse{Success: true})
 		})
 
@@ -120,6 +125,9 @@ func Test_Fuzzy(t *testing.T) {
 		transport.Reset()
 		transport.RegisterResponder(http.MethodPost, "/fuzzyadd", func(req *http.Request) (*http.Response, error) {
 			_, _ = ioutil.ReadAll(req.Body)
+			require.Equal(t, "5", req.Header.Get(QueueID))
+			require.Equal(t, "1", req.Header.Get(Flag))
+			require.Equal(t, "19", req.Header.Get(Weight))
 			return httpmock.NewJsonResponse(400, FuzzyResponse{Success: false})
 		})
 
@@ -138,13 +146,13 @@ func Test_IsAlreadyLearnedError(t *testing.T) {
 	client.client = restyClient
 
 	h6 := http.Header{}
-	h6.Set(QueueID, "6")
+	SetQueueID(h6, "6")
 	e6 := &LearnRequest{
 		Message: open(t, "./testdata/test1.eml"),
 		Header:  h6,
 	}
 	h7 := http.Header{}
-	h7.Set(QueueID, "7")
+	SetQueueID(h7, "7")
 	e7 := &LearnRequest{
 		Message: open(t, "./testdata/test1.eml"),
 		Header:  h7,
@@ -154,6 +162,7 @@ func Test_IsAlreadyLearnedError(t *testing.T) {
 		transport.Reset()
 		transport.RegisterResponder(http.MethodPost, "/learnspam", func(req *http.Request) (*http.Response, error) {
 			_, _ = ioutil.ReadAll(req.Body)
+			require.Equal(t, "6", req.Header.Get(QueueID))
 			return httpmock.NewJsonResponse(208, struct {
 				ErrorField string `json:"error"`
 			}{ErrorField: "<EmailId> has been already learned as spam, ignore it"})
@@ -169,6 +178,7 @@ func Test_IsAlreadyLearnedError(t *testing.T) {
 		transport.Reset()
 		transport.RegisterResponder(http.MethodPost, "/learnspam", func(req *http.Request) (*http.Response, error) {
 			_, _ = ioutil.ReadAll(req.Body)
+			require.Equal(t, "7", req.Header.Get(QueueID))
 			return httpmock.NewJsonResponse(400, struct {
 				ErrorField string `json:"error"`
 			}{ErrorField: "error"})

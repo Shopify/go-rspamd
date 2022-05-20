@@ -151,8 +151,8 @@ func (c *client) FuzzyAdd(ctx context.Context, fr *FuzzyRequest) (*FuzzyResponse
 	if fr.Header == nil {
 		fr.Header = http.Header{}
 	}
-	fr.Header.Set(Flag, strconv.Itoa(fr.Flag))
-	fr.Header.Set(Weight, strconv.Itoa(fr.Weight))
+	SetFlag(fr.Header, fr.Flag)
+	SetWeight(fr.Header, fr.Weight)
 	req := c.buildRequest(ctx, fr.Message, fr.Header).SetResult(result)
 	_, err := c.sendRequest(req, resty.MethodPost, fuzzyAddEndpoint)
 	return result, err
@@ -164,7 +164,7 @@ func (c *client) FuzzyDel(ctx context.Context, fr *FuzzyRequest) (*FuzzyResponse
 	if fr.Header == nil {
 		fr.Header = http.Header{}
 	}
-	fr.Header.Set(Flag, strconv.Itoa(fr.Flag))
+	SetFlag(fr.Header, fr.Flag)
 	req := c.buildRequest(ctx, fr.Message, fr.Header).SetResult(result)
 	_, err := c.sendRequest(req, resty.MethodPost, fuzzyDelEndpoint)
 	return result, err
@@ -236,4 +236,16 @@ func ReaderFromWriterTo(writerTo io.WriterTo) io.Reader {
 	}()
 
 	return r
+}
+
+func SetQueueID(header http.Header, queueID string) {
+	header.Set(QueueID, queueID)
+}
+
+func SetFlag(header http.Header, flag int) {
+	header.Set(Flag, strconv.Itoa(flag))
+}
+
+func SetWeight(header http.Header, weight int) {
+	header.Set(Weight, strconv.Itoa(weight))
 }
