@@ -3,6 +3,5 @@ org_line: Production Engineering
 owners:
 - Shopify/notification-platform-eng
 audience: internal
-classification: library
 slack_channels:
     - courier-operations
