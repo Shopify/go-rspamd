@@ -19,4 +19,4 @@ commands:
     run: go mod tidy
 
 open:
-  devbuddy: https://github.com/devbuddy/devbuddy/blob/master/docs/Config.md#config-devyml
+  devbuddy: https://github.com/devbuddy/devbuddy/blob/main/docs/Config.md#config-devyml
