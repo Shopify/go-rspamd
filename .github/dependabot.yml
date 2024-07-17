@@ -1,0 +1,7 @@
+updates:
+  - package-ecosystem: gomod
+    directory: "/"
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 100
+    registries: "*"
